@@ -6,10 +6,14 @@ data class Workout(
     val category: String,
     val rounds: Int,
     val workSeconds: Int,
-    val restSeconds: Int
+    val restSeconds: Int,
+    val prepareSeconds: Int = 0,
+    val roundWarningSeconds: Int = 0,
+    val periodicAlertSeconds: Int = 0,
+    val restWarningEnabled: Boolean = false
 ) {
     val totalSeconds: Int
-        get() = rounds * workSeconds + (rounds - 1).coerceAtLeast(0) * restSeconds
+        get() = prepareSeconds + rounds * workSeconds + (rounds - 1).coerceAtLeast(0) * restSeconds
 }
 
 val workoutPresets = listOf(

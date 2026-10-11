@@ -60,7 +60,7 @@ fun WorkoutListScreen(
             }
             item {
                 Text(
-                    "Total time includes rest between rounds, with no rest after the final round.",
+                    "Total time includes preparation and rest between rounds, with no rest after the final round.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

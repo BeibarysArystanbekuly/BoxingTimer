@@ -1,6 +1,8 @@
 package com.example.timerboxing
 
 import android.os.SystemClock
+import android.media.AudioManager
+import android.media.ToneGenerator
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,11 +45,21 @@ import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkoutDetailScreen(workout: Workout?, onBack: () -> Unit) {
+fun WorkoutDetailScreen(workout: Workout?, onBack: () -> Unit, onSettings: () -> Unit = {}) {
     var elapsedMillis by rememberSaveable(workout?.id) { mutableStateOf(0L) }
     var isRunning by remember(workout?.id) { mutableStateOf(false) }
     var hasStarted by rememberSaveable(workout?.id) { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
+    var alertTone by remember { mutableStateOf<ToneGenerator?>(null) }
+    DisposableEffect(Unit) {
+        val tone = try {
+            ToneGenerator(AudioManager.STREAM_MUSIC, 80)
+        } catch (_: RuntimeException) {
+            null
+        }
+        alertTone = tone
+        onDispose { tone?.release() }
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -63,8 +75,14 @@ fun WorkoutDetailScreen(workout: Workout?, onBack: () -> Unit) {
             val startedAt = SystemClock.elapsedRealtime()
             val durationMillis = workout.totalSeconds * 1000L
             while (isRunning) {
+                val previousSecond = (elapsedMillis / 1000).toInt()
                 elapsedMillis = (initialElapsed + SystemClock.elapsedRealtime() - startedAt)
                     .coerceAtMost(durationMillis)
+                val currentSecond = (elapsedMillis / 1000).toInt()
+                if (currentSecond > previousSecond &&
+                    (previousSecond + 1..currentSecond).any { workout.shouldAlert(it) }) {
+                    alertTone?.startTone(ToneGenerator.TONE_PROP_BEEP, 200)
+                }
                 if (elapsedMillis >= durationMillis) isRunning = false
                 else delay(100)
             }
@@ -118,6 +136,7 @@ fun WorkoutDetailScreen(workout: Workout?, onBack: () -> Unit) {
                 Text(
                     when {
                         reading.isFinished -> "Workout complete"
+                        reading.isPreparing -> "Get ready"
                         reading.isRest -> "Rest"
                         else -> "Work"
                     },
@@ -165,8 +184,11 @@ fun WorkoutDetailScreen(workout: Workout?, onBack: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.medium)
                 ) {
-                    IconButton(onClick = {}, enabled = false) {
-                        Icon(painterResource(R.drawable.ic_settings), contentDescription = "Workout settings unavailable")
+                    IconButton(onClick = {
+                        isRunning = false
+                        onSettings()
+                    }) {
+                        Icon(painterResource(R.drawable.ic_settings), contentDescription = "Open workout settings")
                     }
                     Text("Workout settings", style = MaterialTheme.typography.bodyMedium)
                 }

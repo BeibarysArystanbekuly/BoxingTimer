@@ -9,6 +9,31 @@ class WorkoutTimerTest {
     private val workout = Workout(1, "Test", "Boxing", 2, 3, 2)
 
     @Test
+    fun preparationPrecedesFirstRoundAndIsIncludedInTotal() {
+        val prepared = workout.copy(prepareSeconds = 5)
+        assertEquals(13, prepared.totalSeconds)
+        assertEquals(TimerReading(1, 5, isPreparing = true), prepared.timerReading(0))
+        assertEquals(5000L, prepared.nextPhaseElapsedMillis(1500))
+        assertEquals(TimerReading(1, 3), prepared.timerReading(5000))
+        assertEquals(8000L, prepared.nextPhaseElapsedMillis(6000))
+        assertTrue(prepared.timerReading(13000).isFinished)
+    }
+
+    @Test
+    fun alertsRespectConfiguredRoundAndRestThresholds() {
+        val alerts = workout.copy(workSeconds = 30, restSeconds = 15,
+            roundWarningSeconds = 5, periodicAlertSeconds = 10, restWarningEnabled = true)
+        assertFalse(alerts.shouldAlert(0))
+        assertTrue(alerts.shouldAlert(10))
+        assertTrue(alerts.shouldAlert(25))
+        assertTrue(alerts.shouldAlert(35))
+        assertFalse(alerts.shouldAlert(36))
+        assertFalse(alerts.shouldAlert(alerts.totalSeconds))
+        assertFalse(alerts.copy(roundWarningSeconds = 0, periodicAlertSeconds = 0,
+            restWarningEnabled = false).shouldAlert(10))
+    }
+
+    @Test
     fun skipMovesToExactRestAndWorkBoundaries() {
         assertEquals(3000L, workout.nextPhaseElapsedMillis(1250))
         assertEquals(5000L, workout.nextPhaseElapsedMillis(3500))
