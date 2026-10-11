@@ -24,7 +24,10 @@ import com.example.timerboxing.ui.theme.TImerBoxingTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WorkoutListScreen(workouts: List<Workout> = workoutPresets) {
+fun WorkoutListScreen(
+    workouts: List<Workout> = workoutPresets,
+    onWorkoutClick: (Int) -> Unit = {}
+) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Timer Boxing") }) }
     ) { innerPadding ->
@@ -53,7 +56,7 @@ fun WorkoutListScreen(workouts: List<Workout> = workoutPresets) {
                 }
             }
             items(workouts, key = { it.id }) { workout ->
-                WorkoutCard(workout)
+                WorkoutCard(workout, onClick = { onWorkoutClick(workout.id) })
             }
             item {
                 Text(
@@ -67,8 +70,8 @@ fun WorkoutListScreen(workouts: List<Workout> = workoutPresets) {
 }
 
 @Composable
-fun WorkoutCard(workout: Workout, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth()) {
+fun WorkoutCard(workout: Workout, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+    Card(onClick = onClick, modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(Spacing.large),
             verticalArrangement = Arrangement.spacedBy(Spacing.medium)
