@@ -42,3 +42,12 @@ fun Workout.shouldAlert(elapsedSeconds: Int): Boolean {
     return (roundWarningSeconds > 0 && reading.remainingSeconds == roundWarningSeconds) ||
         (periodicAlertSeconds > 0 && secondsIntoRound > 0 && secondsIntoRound % periodicAlertSeconds == 0)
 }
+
+fun Workout.shouldSignal(elapsedSeconds: Int): Boolean {
+    if (elapsedSeconds < 0 || elapsedSeconds > totalSeconds) return false
+    if (elapsedSeconds == totalSeconds) return true
+    if (shouldAlert(elapsedSeconds)) return true
+    if (elapsedSeconds < prepareSeconds) return false
+    val secondsInCycle = (elapsedSeconds - prepareSeconds) % (workSeconds + restSeconds)
+    return secondsInCycle == 0 || secondsInCycle == workSeconds
+}

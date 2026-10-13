@@ -9,6 +9,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -25,8 +30,12 @@ import com.example.timerboxing.ui.theme.TImerBoxingTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutListScreen(
-    workouts: List<Workout> = workoutPresets,
-    onWorkoutClick: (Int) -> Unit = {}
+    uiState: WorkoutListUiState,
+    onWorkoutClick: (Int) -> Unit = {},
+    onSearchChange: (String) -> Unit = {},
+    onSortChange: (WorkoutSortOrder) -> Unit = {},
+    onRetry: () -> Unit = {},
+    onSimulateError: () -> Unit = {}
 ) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Timer Boxing") }) }
@@ -46,17 +55,45 @@ fun WorkoutListScreen(
                     )
                 }
             }
-            if (workouts.isEmpty()) {
+            item {
+                OutlinedTextField(
+                    value = uiState.searchQuery,
+                    onValueChange = onSearchChange,
+                    label = { Text("Search workouts") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text("Sort by name", modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = uiState.sortOrder == WorkoutSortOrder.NAME,
+                        onCheckedChange = { onSortChange(if (it) WorkoutSortOrder.NAME else WorkoutSortOrder.DEFAULT) }
+                    )
+                }
+            }
+            if (uiState.isLoading) {
+                item { CircularProgressIndicator() }
+            } else if (uiState.error != null) {
+                item {
+                    Text(uiState.error, color = MaterialTheme.colorScheme.error)
+                    Button(onClick = onRetry) { Text("Retry") }
+                }
+            } else if (uiState.workouts.isEmpty()) {
                 item {
                     Text(
-                        "No workouts here yet. Add a preset to get started.",
+                        "No workouts match your search.",
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(vertical = Spacing.extraLarge)
                     )
                 }
             }
-            items(workouts, key = { it.id }) { workout ->
-                WorkoutCard(workout, onClick = { onWorkoutClick(workout.id) })
+            if (!uiState.isLoading && uiState.error == null) {
+                items(uiState.workouts, key = { it.id }) { workout ->
+                    WorkoutCard(workout, onClick = { onWorkoutClick(workout.id) })
+                }
+            }
+            if (BuildConfig.DEBUG) {
+                item { TextButton(onClick = onSimulateError) { Text("Simulate loading error") } }
             }
             item {
                 Text(
@@ -110,13 +147,13 @@ fun WorkoutCard(workout: Workout, modifier: Modifier = Modifier, onClick: () -> 
 @Preview(showBackground = true)
 @Composable
 fun WorkoutListPreview() {
-    TImerBoxingTheme(dynamicColor = false) { WorkoutListScreen() }
+    TImerBoxingTheme(dynamicColor = false) { WorkoutListScreen(WorkoutListUiState(workouts = workoutPresets, isLoading = false)) }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun WorkoutListDarkPreview() {
-    TImerBoxingTheme(darkTheme = true, dynamicColor = false) { WorkoutListScreen() }
+    TImerBoxingTheme(darkTheme = true, dynamicColor = false) { WorkoutListScreen(WorkoutListUiState(workouts = workoutPresets, isLoading = false)) }
 }
 
 @Preview(showBackground = true)
@@ -128,5 +165,17 @@ fun WorkoutCardPreview() {
 @Preview(showBackground = true)
 @Composable
 fun EmptyWorkoutListPreview() {
-    TImerBoxingTheme(dynamicColor = false) { WorkoutListScreen(emptyList()) }
+    TImerBoxingTheme(dynamicColor = false) { WorkoutListScreen(WorkoutListUiState(isLoading = false)) }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LoadingWorkoutListPreview() {
+    TImerBoxingTheme { WorkoutListScreen(WorkoutListUiState()) }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ErrorWorkoutListPreview() {
+    TImerBoxingTheme { WorkoutListScreen(WorkoutListUiState(isLoading = false, error = "Could not load workouts.")) }
 }

@@ -9,6 +9,36 @@ class WorkoutTimerTest {
     private val workout = Workout(1, "Test", "Boxing", 2, 3, 2)
 
     @Test
+    fun signalsWorkRestAndCompletionWithoutConfiguredWarnings() {
+        assertTrue(workout.shouldSignal(0))
+        assertFalse(workout.shouldSignal(1))
+        assertTrue(workout.shouldSignal(3))
+        assertTrue(workout.shouldSignal(5))
+        assertTrue(workout.shouldSignal(8))
+        assertFalse(workout.shouldSignal(9))
+    }
+
+    @Test
+    fun signalsAfterPreparationAndAtZeroRestRoundBoundaries() {
+        val prepared = workout.copy(prepareSeconds = 5, restSeconds = 0)
+        assertFalse(prepared.shouldSignal(0))
+        assertFalse(prepared.shouldSignal(4))
+        assertTrue(prepared.shouldSignal(5))
+        assertTrue(prepared.shouldSignal(8))
+        assertTrue(prepared.shouldSignal(11))
+    }
+
+    @Test
+    fun signalsWarningsIncludingFullRoundDurationAtStartup() {
+        val alerts = workout.copy(workSeconds = 30, roundWarningSeconds = 30,
+            periodicAlertSeconds = 10)
+        assertTrue(alerts.shouldAlert(0))
+        assertTrue(alerts.shouldSignal(0))
+        assertTrue(alerts.shouldSignal(10))
+        assertFalse(alerts.shouldSignal(11))
+    }
+
+    @Test
     fun preparationPrecedesFirstRoundAndIsIncludedInTotal() {
         val prepared = workout.copy(prepareSeconds = 5)
         assertEquals(13, prepared.totalSeconds)
