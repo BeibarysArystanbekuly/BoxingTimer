@@ -1,0 +1,29 @@
+flowchart LR
+    List[WorkoutListScreen] -->|onSearchChange callback|ListRoute[WorkoutListRoute]
+    ListRoute -->|onSearchChange / onSortChange / onRetry|ListVM[WorkoutListViewModel]
+    ListVM -->|StateFlow: workouts, searchQuery, sortOrder, isLoading, error|ListRoute
+    ListRoute -->|uiState and callbacks|List
+    Detail[WorkoutDetailScreen] -->|play / pause / reset / skip|DetailRoute[WorkoutDetailRoute]
+    DetailRoute -->|event functions|DetailVM[WorkoutDetailViewModel]
+    DetailVM -->|StateFlow: workout, phase, currentRound, remainingSeconds, isRunning, isLoading, error|DetailRoute
+    DetailRoute -->|uiState and callbacks|Detail
+    DetailVM -->|SharedFlow: sound event ID and timestamp|DetailRoute
+    DetailRoute -->|consumeSignal then play|Audio[WorkoutSignal / ToneGenerator]
+    Activity[Activity lifecycle] -->|ON_STOP, except configuration changes|Observer[WorkoutLifecycleObserver]
+    Observer -->|onPause|DetailVM
+    Settings[WorkoutSettingsScreen] -->|edit draft / Save|SettingsRoute[WorkoutSettingsRoute]
+    SettingsRoute -->|onFieldChange / onSave|SettingsVM[WorkoutSettingsViewModel]
+    SettingsVM -->|StateFlow: draft, isLoading, isSaving, validationErrors, error|SettingsRoute
+    SettingsRoute -->|uiState and callbacks|Settings
+    SettingsVM -->|savedEvents / consumeSavedEvent|SettingsRoute
+    SettingsRoute -->|pop settings; retain detail entry|Navigation[BoxingApp / NavController]
+    ListVM -->|load|Repository[WorkoutRepository]
+    Repository -->|workouts StateFlow|ListVM
+    DetailVM -->|load and observeWorkout by ID|Repository
+    Repository -->|Flow of updated workout|DetailVM
+    DetailVM -->|capture on new session|Snapshot[Immutable sessionWorkout snapshot]
+    Snapshot -->|timer calculations through pause and resume|DetailVM
+    SettingsVM -->|load / save validated draft|Repository
+    Repository -->|load / save|Store[WorkoutStore / SharedPreferences]
+    SavedState[SavedStateHandle: workoutId] --> DetailVM
+    SavedState --> SettingsVM
