@@ -7,9 +7,8 @@ The dependency chain is Screen -> Route -> ViewModel -> Repository -> Store.
 The original Timer / Profiles / Settings names correspond to WorkoutDetail /
 WorkoutList / WorkoutSettings in this project.
 
-Screens receive only immutable state and callbacks. Routes in
-`app/src/main/java/com/example/timerboxing/WorkoutRoutes.kt` create navigation-entry
-ViewModels and collect their public `StateFlow` using `collectAsStateWithLifecycle()`.
+Screens receive only immutable state and callbacks. Each feature's `*Route.kt`
+creates navigation-entry ViewModels and collects their public `StateFlow` using `collectAsStateWithLifecycle()`.
 Every ViewModel keeps its `MutableStateFlow` private and updates UiState with `copy()`.
 All UiState properties use `val`; Android effects and navigation stay outside Screens.
 
@@ -23,6 +22,77 @@ All UiState properties use `val`; Android effects and navigation stay outside Sc
 PREPARATION, WORK, REST, and FINISHED. Pausing retains the phase with `isRunning = false`.
 Each screen has loading/content/empty/error previews; absent workout IDs produce
 an empty detail/settings screen, and an unmatched search produces an empty list.
+
+### Project folders
+
+Kotlin source root: `app/src/main/java/com/example/timerboxing/`.
+The folder names match the Kotlin packages. This is one Android app module.
+
+```text
+com.example.timerboxing/
+├── MainActivity.kt
+├── BoxingApplication.kt
+├── BoxingApp.kt
+├── features/
+│   ├── workoutlist/
+│   │   ├── WorkoutListRoute.kt
+│   │   ├── WorkoutListScreen.kt
+│   │   ├── WorkoutListViewModel.kt
+│   │   ├── WorkoutListUiState.kt
+│   │   └── components/
+│   │       └── WorkoutCard.kt
+│   ├── workoutdetail/
+│   │   ├── WorkoutDetailRoute.kt
+│   │   ├── WorkoutDetailScreen.kt
+│   │   ├── WorkoutDetailViewModel.kt
+│   │   ├── WorkoutDetailUiState.kt
+│   │   ├── components/
+│   │   │   └── TimerControls.kt
+│   │   ├── timer/
+│   │   │   └── WorkoutTimer.kt
+│   │   └── platform/
+│   │       ├── WorkoutSignal.kt
+│   │       └── WorkoutLifecycleObserver.kt
+│   └── workoutsettings/
+│       ├── WorkoutSettingsRoute.kt
+│       ├── WorkoutSettingsScreen.kt
+│       ├── WorkoutSettingsViewModel.kt
+│       ├── WorkoutSettingsUiState.kt
+│       └── DurationInput.kt
+├── model/
+│   └── Workout.kt
+├── data/
+│   ├── WorkoutRepository.kt
+│   └── WorkoutStore.kt
+└── ui/
+    └── theme/
+        ├── Color.kt
+        ├── Theme.kt
+        ├── Type.kt
+        └── Spacing.kt
+```
+
+Each feature keeps its Screen, Route, ViewModel, and UiState together. The Screen
+displays state and calls callbacks. The Route connects it to the ViewModel and
+handles navigation and Android effects. The ViewModel owns state and actions.
+UiState files hold the immutable display models, including list sorting, detail
+phases, and the settings draft and field types.
+
+The list card and timer buttons live in `components/`, with their own previews.
+Detail's `timer/` contains pure countdown calculations; `platform/` contains
+sound playback and the Activity lifecycle observer. Settings keeps duration input
+parsing beside its ViewModel.
+
+`model/Workout.kt` defines the workout data shared by all three features.
+`data/` contains the repository that provides and updates that data and the
+Store that persists it. They stay outside feature folders because List, Detail,
+and Settings use the same workouts. `BoxingApplication` provides their shared
+repository instance; `BoxingApp` connects the three navigation destinations.
+`ui/theme/` supplies the shared appearance.
+
+The former `WorkoutRoutes.kt` is split into the three feature Route files.
+Tests remain under `app/src/test/java/com/example/timerboxing/` and import the
+new packages. The existing ViewModel test spans multiple features.
 
 ### Repository, settings, and session parameters
 
@@ -82,7 +152,7 @@ accepted event, not a guarantee that muted or unavailable audio hardware plays i
 ### Trace one click: search
 
 1. The search field in `WorkoutListScreen.kt` invokes its `onSearchChange` callback.
-2. `WorkoutListRoute` in `WorkoutRoutes.kt` wires that callback to
+2. `WorkoutListRoute` in `features/workoutlist/WorkoutListRoute.kt` wires that callback to
    `WorkoutListViewModel.onSearchChange()` in `WorkoutListViewModel.kt`.
 3. `onSearchChange()` updates `searchQuery` through `copy()`, then
    `updateResults()` filters the repository list and applies `sortOrder`.
@@ -104,6 +174,14 @@ Codex ran the debug APK build, Android lint, and all 31 JVM tests successfully
 (15 ViewModel/repository/lifecycle/event tests plus 16 existing tests).
 The tests ran through JUnitCore with the freshly built Gradle runtime classpath
 because the Gradle test worker had failed to launch on this computer.
+
+### Folder refactor verification - 14 October 2026
+
+After reorganizing the packages, Codex built the debug APK and ran Android lint
+successfully. All 31 existing JVM tests passed through JUnitCore using the freshly
+exported Gradle runtime classpath. The normal Gradle test task still failed to
+launch its worker (`GradleWorkerMain`); it is not counted as a passing test run.
+Phone interactions were not repeated for this folder refactor.
 
 ### My phone test - 13 October 2026
 

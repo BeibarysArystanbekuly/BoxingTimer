@@ -27,3 +27,44 @@ flowchart LR
     Repository -->|load / save|Store[WorkoutStore / SharedPreferences]
     SavedState[SavedStateHandle: workoutId] --> DetailVM
     SavedState --> SettingsVM
+
+    subgraph ListFeature["features/workoutlist"]
+        List
+        ListRoute
+        ListVM
+        ListState[WorkoutListUiState.kt]
+        Card[components/WorkoutCard.kt]
+    end
+    subgraph DetailFeature["features/workoutdetail"]
+        Detail
+        DetailRoute
+        DetailVM
+        Snapshot
+        DetailState[WorkoutDetailUiState.kt]
+        Controls[components/TimerControls.kt]
+        Timer[timer/WorkoutTimer.kt]
+        subgraph DetailPlatform["platform"]
+            Audio
+            Observer
+        end
+    end
+    subgraph SettingsFeature["features/workoutsettings"]
+        Settings
+        SettingsRoute
+        SettingsVM
+        SettingsState[WorkoutSettingsUiState.kt]
+        Duration[DurationInput.kt]
+    end
+    subgraph SharedData["data"]
+        Repository
+        Store
+    end
+    subgraph SharedModel["model"]
+        WorkoutModel[Workout.kt]
+    end
+    List --> Card
+    Detail --> Controls
+    DetailVM --> Timer
+    SettingsVM --> Duration
+    Repository --> WorkoutModel
+    Store --> WorkoutModel

@@ -7,6 +7,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.timerboxing.features.workoutdetail.WorkoutDetailRoute
+import com.example.timerboxing.features.workoutlist.WorkoutListRoute
+import com.example.timerboxing.features.workoutsettings.WorkoutSettingsRoute
 
 @Composable
 fun BoxingApp() {

@@ -1,8 +1,9 @@
-package com.example.timerboxing
+package com.example.timerboxing.features.workoutlist
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.timerboxing.data.WorkoutRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,16 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-enum class WorkoutSortOrder { DEFAULT, NAME }
-
-data class WorkoutListUiState(
-    val workouts: List<Workout> = emptyList(),
-    val searchQuery: String = "",
-    val sortOrder: WorkoutSortOrder = WorkoutSortOrder.DEFAULT,
-    val isLoading: Boolean = true,
-    val error: String? = null
-)
 
 class WorkoutListViewModel(private val repository: WorkoutRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(WorkoutListUiState())

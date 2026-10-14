@@ -84,3 +84,14 @@ already demonstrated that.
 
 The architecture diagram was adapted during the refactor. An architecture-first
 commit was not created before the coding work, so I should not describe it as one.
+
+## Folder organization - 14 October 2026
+
+I asked why the shared model and data files sit outside the screen folders.
+After discussing the structure, I asked Codex to apply it and document it in README.
+Codex moved the files into feature packages, split the Routes and UiState files,
+extracted the workout card and timer controls with their previews, and updated
+imports. This folder refactor was AI-assisted.
+Codex verified the debug APK build, lint, and all 31 JVM tests through JUnitCore.
+The existing Gradle test worker launch failure remained. I have not reported
+another phone test after this folder refactor.

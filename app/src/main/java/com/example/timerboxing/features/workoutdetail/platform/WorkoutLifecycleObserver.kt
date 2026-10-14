@@ -1,4 +1,4 @@
-package com.example.timerboxing
+package com.example.timerboxing.features.workoutdetail.platform
 
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver

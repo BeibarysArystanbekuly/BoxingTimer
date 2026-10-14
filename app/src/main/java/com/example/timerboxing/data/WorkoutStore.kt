@@ -1,6 +1,8 @@
-package com.example.timerboxing
+package com.example.timerboxing.data
 
 import android.content.Context
+import com.example.timerboxing.model.Workout
+import com.example.timerboxing.model.workoutPresets
 
 class WorkoutStore(context: Context) {
     private val preferences = context.getSharedPreferences("workout_settings", Context.MODE_PRIVATE)

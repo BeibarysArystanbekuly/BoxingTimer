@@ -1,9 +1,12 @@
-package com.example.timerboxing
+package com.example.timerboxing.features.workoutsettings
 
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.timerboxing.data.WorkoutRepository
+import com.example.timerboxing.model.Workout
+import com.example.timerboxing.model.formatDuration
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
@@ -15,29 +18,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-enum class WorkoutSetting { ROUNDS, WORK, REST, PREPARE, WARNING, PERIODIC }
-
-data class SettingField(
-    val setting: WorkoutSetting,
-    val label: String,
-    val value: String,
-    val isDuration: Boolean
-)
-
-data class WorkoutSettingsDraft(
-    val workout: Workout,
-    val fields: List<SettingField>,
-    val restWarning: Boolean
-)
-
-data class WorkoutSettingsUiState(
-    val draft: WorkoutSettingsDraft? = null,
-    val isLoading: Boolean = true,
-    val isSaving: Boolean = false,
-    val validationErrors: Map<WorkoutSetting, String> = emptyMap(),
-    val error: String? = null
-)
 
 internal fun settingsDraft(workout: Workout) = WorkoutSettingsDraft(
     workout = workout,

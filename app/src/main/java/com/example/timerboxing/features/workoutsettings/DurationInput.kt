@@ -1,4 +1,4 @@
-package com.example.timerboxing
+package com.example.timerboxing.features.workoutsettings
 
 fun parseDuration(value: String): Int? {
     if (!value.matches(Regex("[0-9]{2}:[0-9]{2}"))) return null

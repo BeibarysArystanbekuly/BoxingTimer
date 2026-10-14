@@ -1,4 +1,4 @@
-package com.example.timerboxing
+package com.example.timerboxing.features.workoutdetail
 
 import android.app.Activity
 import android.content.ContextWrapper
@@ -8,7 +8,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.Lifecycle
@@ -19,16 +18,9 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-
-@Composable
-fun WorkoutListRoute(repository: WorkoutRepository, onWorkoutClick: (Int) -> Unit) {
-    val model: WorkoutListViewModel = viewModel(factory = viewModelFactory {
-        initializer { WorkoutListViewModel(repository) }
-    })
-    val state by model.uiState.collectAsStateWithLifecycle()
-    WorkoutListScreen(state, onWorkoutClick, model::onSearchChange, model::onSortChange,
-        model::onRetry, model::onSimulateError)
-}
+import com.example.timerboxing.data.WorkoutRepository
+import com.example.timerboxing.features.workoutdetail.platform.WorkoutLifecycleObserver
+import com.example.timerboxing.features.workoutdetail.platform.rememberWorkoutSignal
 
 @Composable
 fun WorkoutDetailRoute(repository: WorkoutRepository, onBack: () -> Unit, onSettings: () -> Unit) {
@@ -71,23 +63,4 @@ fun WorkoutDetailRoute(repository: WorkoutRepository, onBack: () -> Unit, onSett
     BackHandler(onBack = navigateBack)
     WorkoutDetailScreen(state, navigateBack, { model.onPause(); onSettings() },
         model::onPlayPause, model::onStop, model::onNext, model::onRetry)
-}
-
-@Composable
-fun WorkoutSettingsRoute(repository: WorkoutRepository, onBack: () -> Unit, onSaved: (Int) -> Unit) {
-    val model: WorkoutSettingsViewModel = viewModel(factory = viewModelFactory {
-        initializer { WorkoutSettingsViewModel(repository, createSavedStateHandle()) }
-    })
-    val state by model.uiState.collectAsStateWithLifecycle()
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val currentOnSaved by rememberUpdatedState(onSaved)
-    LaunchedEffect(model, lifecycleOwner) {
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            model.savedEvents.collect { workoutId ->
-                if (workoutId != null && model.consumeSavedEvent(workoutId)) currentOnSaved(workoutId)
-            }
-        }
-    }
-    WorkoutSettingsScreen(state, onBack, model::onSave, model::onFieldChange,
-        model::onRestWarningChange, model::onRetry)
 }

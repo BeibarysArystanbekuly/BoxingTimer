@@ -1,4 +1,4 @@
-package com.example.timerboxing
+package com.example.timerboxing.model
 
 data class Workout(
     val id: Int,

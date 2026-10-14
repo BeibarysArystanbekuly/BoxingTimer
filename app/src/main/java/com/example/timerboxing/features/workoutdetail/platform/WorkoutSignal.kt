@@ -1,4 +1,4 @@
-package com.example.timerboxing
+package com.example.timerboxing.features.workoutdetail.platform
 
 import android.media.AudioManager
 import android.media.ToneGenerator

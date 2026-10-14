@@ -1,10 +1,15 @@
-package com.example.timerboxing
+package com.example.timerboxing.features.workoutdetail
 
 import android.os.SystemClock
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.timerboxing.data.WorkoutRepository
+import com.example.timerboxing.features.workoutdetail.timer.nextPhaseElapsedMillis
+import com.example.timerboxing.features.workoutdetail.timer.shouldSignal
+import com.example.timerboxing.features.workoutdetail.timer.timerReading
+import com.example.timerboxing.model.Workout
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
@@ -17,18 +22,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-enum class WorkoutPhase { READY, PREPARATION, WORK, REST, FINISHED }
-
-data class WorkoutDetailUiState(
-    val workout: Workout? = null,
-    val phase: WorkoutPhase = WorkoutPhase.READY,
-    val currentRound: Int = 1,
-    val remainingSeconds: Int = 0,
-    val isRunning: Boolean = false,
-    val isLoading: Boolean = true,
-    val error: String? = null
-)
 
 data class WorkoutSoundEvent(val id: Long, val createdAtMillis: Long)
 

@@ -1,4 +1,6 @@
-package com.example.timerboxing
+package com.example.timerboxing.features.workoutdetail.timer
+
+import com.example.timerboxing.model.Workout
 
 data class TimerReading(
     val round: Int,
