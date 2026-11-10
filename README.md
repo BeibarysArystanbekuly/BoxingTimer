@@ -3,24 +3,26 @@ TimerBoxing
 ## MVVM architecture
 
 [design/architecture.mmd](design/architecture.mmd) is the editable Mermaid diagram.
-The dependency chain is Screen -> Route -> ViewModel -> Repository -> Store.
+Routes connect Screens to ViewModels, which depend on domain repository interfaces.
+Data implementations use either the local workout Store or the wger exercise API.
 The original Timer / Profiles / Settings names correspond to WorkoutDetail /
 WorkoutList / WorkoutSettings in this project.
 
 Screens receive only immutable state and callbacks. Each feature's `*Route.kt`
 creates navigation-entry ViewModels and collects their public `StateFlow` using `collectAsStateWithLifecycle()`.
-Every ViewModel keeps its `MutableStateFlow` private and updates UiState with `copy()`.
+Every ViewModel keeps its `MutableStateFlow` private and exposes read-only state.
 All UiState properties use `val`; Android effects and navigation stay outside Screens.
 
 | UiState | Fields |
 | --- | --- |
-| WorkoutListUiState | workouts, searchQuery, sortOrder, isLoading, error |
+| WorkoutListUiState | content: UiState<Workout>, searchQuery, sortOrder |
+| UiState<Exercise> | Loading, Success(items), Error(message) |
 | WorkoutDetailUiState | workout, phase, currentRound, remainingSeconds, isRunning, isLoading, error |
 | WorkoutSettingsUiState | draft, isLoading, isSaving, validationErrors, error |
 
 `WorkoutSortOrder` supports DEFAULT and NAME. `WorkoutPhase` distinguishes READY,
 PREPARATION, WORK, REST, and FINISHED. Pausing retains the phase with `isRunning = false`.
-Each screen has loading/content/empty/error previews; absent workout IDs produce
+Workout screens have loading/content/empty/error previews; absent workout IDs produce
 an empty detail/settings screen, and an unmatched search produces an empty list.
 
 ### Project folders
@@ -33,7 +35,13 @@ com.example.timerboxing/
 ├── MainActivity.kt
 ├── BoxingApplication.kt
 ├── BoxingApp.kt
-├── features/
+├── presentation/
+│   ├── UiState.kt
+│   ├── format/DurationFormatter.kt
+│   ├── exerciselist/
+│   │   ├── ExerciseListRoute.kt
+│   │   ├── ExerciseListScreen.kt
+│   │   └── ExerciseListViewModel.kt
 │   ├── workoutlist/
 │   │   ├── WorkoutListRoute.kt
 │   │   ├── WorkoutListScreen.kt
@@ -48,8 +56,6 @@ com.example.timerboxing/
 │   │   ├── WorkoutDetailUiState.kt
 │   │   ├── components/
 │   │   │   └── TimerControls.kt
-│   │   ├── timer/
-│   │   │   └── WorkoutTimer.kt
 │   │   └── platform/
 │   │       ├── WorkoutSignal.kt
 │   │       └── WorkoutLifecycleObserver.kt
@@ -59,11 +65,24 @@ com.example.timerboxing/
 │       ├── WorkoutSettingsViewModel.kt
 │       ├── WorkoutSettingsUiState.kt
 │       └── DurationInput.kt
-├── model/
-│   └── Workout.kt
+├── domain/
+│   ├── model/
+│   │   ├── Workout.kt
+│   │   ├── WorkoutTimer.kt
+│   │   └── Exercise.kt
+│   └── repository/
+│       ├── WorkoutRepository.kt
+│       └── ExerciseRepository.kt
 ├── data/
-│   ├── WorkoutRepository.kt
-│   └── WorkoutStore.kt
+│   ├── remote/
+│   │   ├── ExerciseApi.kt
+│   │   ├── ExerciseApiClient.kt
+│   │   ├── ExerciseDto.kt
+│   │   ├── WorkoutPresets.kt
+│   │   └── WorkoutStore.kt
+│   └── repository/
+│       ├── WorkoutRepositoryImpl.kt
+│       └── ExerciseRepositoryImpl.kt
 └── ui/
     └── theme/
         ├── Color.kt
@@ -79,15 +98,15 @@ UiState files hold the immutable display models, including list sorting, detail
 phases, and the settings draft and field types.
 
 The list card and timer buttons live in `components/`, with their own previews.
-Detail's `timer/` contains pure countdown calculations; `platform/` contains
+`domain/model/WorkoutTimer.kt` contains pure countdown calculations; detail's `platform/` contains
 sound playback and the Activity lifecycle observer. Settings keeps duration input
 parsing beside its ViewModel.
 
-`model/Workout.kt` defines the workout data shared by all three features.
+`domain/model/Workout.kt` defines the workout data shared by the workout features.
 `data/` contains the repository that provides and updates that data and the
 Store that persists it. They stay outside feature folders because List, Detail,
 and Settings use the same workouts. `BoxingApplication` provides their shared
-repository instance; `BoxingApp` connects the three navigation destinations.
+repository instances; `BoxingApp` connects the workout and exercise destinations.
 `ui/theme/` supplies the shared appearance.
 
 The former `WorkoutRoutes.kt` is split into the three feature Route files.
@@ -98,7 +117,27 @@ new packages. The existing ViewModel test spans multiple features.
 
 `BoxingApplication.kt` owns a shared `WorkoutRepository`. The repository owns the
 workout data, uses `WorkoutStore.kt` for SharedPreferences, simulates 500 ms request
-latency, and can simulate a list loading error. Retry performs a normal request.
+latency. The list ViewModel can simulate a loading error. Retry performs a normal request.
+
+### Exercise API
+
+Choose **Browse exercises** from the workout list to load the wger exercise catalog.
+Retrofit uses `https://wger.de/api/v2/` with Gson; `ExerciseRepositoryImpl` loads
+pages and maps DTOs into domain `Exercise` models. These are separate from local
+boxing workouts: the API does not supply timer rounds or durations. The current
+screen displays exercise IDs and muscle/equipment counts, not exercise names.
+`ExerciseListViewModel` exposes `UiState<Exercise>` with Loading, Success, and Error.
+The screen displays a spinner, list, or error with Retry. Domain code has no
+Android or Retrofit dependencies.
+
+### API verification - 10 November 2026
+
+The debug app was installed and tested on a Samsung SM-S936B. The exercise list
+loaded online. With Wi-Fi disabled and mobile data already off, reopening the
+screen and pressing Retry displayed a network error without crashing. Restoring
+Wi-Fi and pressing Retry loaded the list again. Original network settings were
+restored. App and test sources compile; the Gradle unit-test worker still fails
+to launch with `GradleWorkerMain`, so the new repository tests have not executed.
 
 `WorkoutSettingsViewModel.onFieldChange()` changes only its immutable
 `WorkoutSettingsDraft`. Invalid and partial input remains in the draft and is

@@ -1,7 +1,7 @@
 package com.example.timerboxing
 
-import com.example.timerboxing.features.workoutsettings.parseDuration
-import com.example.timerboxing.features.workoutsettings.validDuration
+import com.example.timerboxing.presentation.workoutsettings.parseDuration
+import com.example.timerboxing.presentation.workoutsettings.validDuration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

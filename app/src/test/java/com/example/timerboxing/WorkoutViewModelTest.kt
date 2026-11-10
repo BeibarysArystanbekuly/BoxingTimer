@@ -1,14 +1,16 @@
 package com.example.timerboxing
 
-import com.example.timerboxing.data.WorkoutRepository
-import com.example.timerboxing.features.workoutdetail.WorkoutDetailViewModel
-import com.example.timerboxing.features.workoutdetail.WorkoutPhase
-import com.example.timerboxing.features.workoutdetail.platform.WorkoutLifecycleObserver
-import com.example.timerboxing.features.workoutlist.WorkoutListViewModel
-import com.example.timerboxing.features.workoutlist.WorkoutSortOrder
-import com.example.timerboxing.features.workoutsettings.WorkoutSetting
-import com.example.timerboxing.features.workoutsettings.WorkoutSettingsViewModel
-import com.example.timerboxing.model.Workout
+import com.example.timerboxing.data.repository.WorkoutRepositoryImpl
+import com.example.timerboxing.domain.model.Workout
+import com.example.timerboxing.domain.repository.WorkoutRepository
+import com.example.timerboxing.presentation.UiState
+import com.example.timerboxing.presentation.workoutdetail.WorkoutDetailViewModel
+import com.example.timerboxing.presentation.workoutdetail.WorkoutPhase
+import com.example.timerboxing.presentation.workoutdetail.platform.WorkoutLifecycleObserver
+import com.example.timerboxing.presentation.workoutlist.WorkoutListViewModel
+import com.example.timerboxing.presentation.workoutlist.WorkoutSortOrder
+import com.example.timerboxing.presentation.workoutsettings.WorkoutSetting
+import com.example.timerboxing.presentation.workoutsettings.WorkoutSettingsViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.SavedStateHandle
@@ -56,8 +58,8 @@ class WorkoutViewModelTest {
         return model
     }
 
-    private fun repository(save: (Workout) -> Unit = {}) =
-        WorkoutRepository({ listOf(workout, workout.copy(id = 2, name = "Amateur")) }, save, 500L, dispatcher)
+    private fun repository(save: (Workout) -> Unit = {}): WorkoutRepository =
+        WorkoutRepositoryImpl({ listOf(workout, workout.copy(id = 2, name = "Amateur")) }, save, 500L, dispatcher)
 
     private fun detail(repository: WorkoutRepository = repository()) =
         retain(WorkoutDetailViewModel(repository, SavedStateHandle(mapOf("workoutId" to 1))) {
@@ -67,24 +69,30 @@ class WorkoutViewModelTest {
     @Test
     fun searchAndSortSurviveErrorAndRetry() = runTest(dispatcher) {
         val model = retain(WorkoutListViewModel(repository()))
-        assertTrue(model.uiState.value.isLoading)
+        assertEquals(UiState.Loading, model.uiState.value.content)
+        runCurrent()
+        assertEquals(UiState.Loading, model.uiState.value.content)
         advanceUntilIdle()
         model.onSortChange(WorkoutSortOrder.NAME)
-        assertEquals(listOf("Amateur", "Boxing"), model.uiState.value.workouts.map { it.name })
+        assertEquals(listOf("Amateur", "Boxing"), (model.uiState.value.content as UiState.Success<Workout>).items.map { it.name })
         model.onSearchChange("box")
-        assertEquals(listOf(workout), model.uiState.value.workouts)
+        assertEquals(UiState.Success(listOf(workout)), model.uiState.value.content)
         model.onSimulateError()
         advanceUntilIdle()
-        assertNotNull(model.uiState.value.error)
+        assertTrue(model.uiState.value.content is UiState.Error)
+        model.onSearchChange("boxing")
+        assertTrue(model.uiState.value.content is UiState.Error)
+        model.onSearchChange("box")
         model.onRetry()
+        runCurrent()
+        assertEquals(UiState.Loading, model.uiState.value.content)
         advanceUntilIdle()
-        assertNull(model.uiState.value.error)
+        assertTrue(model.uiState.value.content is UiState.Success)
         assertEquals("box", model.uiState.value.searchQuery)
         assertEquals(WorkoutSortOrder.NAME, model.uiState.value.sortOrder)
-        assertEquals(listOf(workout), model.uiState.value.workouts)
+        assertEquals(UiState.Success(listOf(workout)), model.uiState.value.content)
         model.onSearchChange("missing")
-        assertTrue(model.uiState.value.workouts.isEmpty())
-        assertFalse(model.uiState.value.isLoading)
+        assertEquals(UiState.Success(emptyList<Workout>()), model.uiState.value.content)
     }
 
     @Test
@@ -105,7 +113,7 @@ class WorkoutViewModelTest {
         advanceUntilIdle()
         assertEquals(1, saves)
         assertEquals(5, persisted?.rounds)
-        assertEquals(5, list.uiState.value.workouts.first().rounds)
+        assertEquals(5, (list.uiState.value.content as UiState.Success<Workout>).items.first().rounds)
         assertEquals(5, detail.uiState.value.workout?.rounds)
         assertSame(detail, store.get(WorkoutDetailViewModel::class.java.name))
         assertTrue(settings.consumeSavedEvent(1))
@@ -375,7 +383,7 @@ class WorkoutViewModelTest {
         val observed = mutableListOf<Workout?>()
         backgroundScope.launch { repository.observeWorkout(1).collect { observed.add(it) } }
         runCurrent()
-        repository.load()
+        repository.getItems()
         runCurrent()
         repository.save(workout.copy(id = 2, name = "Changed other workout"))
         runCurrent()
@@ -398,7 +406,7 @@ class WorkoutViewModelTest {
     @Test
     fun detailLoadFailureCanBeRetried() = runTest(dispatcher) {
         var fail = true
-        val repository = WorkoutRepository(
+        val repository = WorkoutRepositoryImpl(
             { if (fail) error("Loading failed") else listOf(workout) }, {}, 500L, dispatcher
         )
         val model = detail(repository)

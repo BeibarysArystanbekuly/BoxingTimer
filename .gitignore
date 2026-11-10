@@ -9,6 +9,7 @@
 
 # Local tooling dependencies and scratch files.
 /tmp/
+/debug.log
 .DS_Store
 /build
 /captures

@@ -7,19 +7,26 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.timerboxing.features.workoutdetail.WorkoutDetailRoute
-import com.example.timerboxing.features.workoutlist.WorkoutListRoute
-import com.example.timerboxing.features.workoutsettings.WorkoutSettingsRoute
+import com.example.timerboxing.presentation.workoutdetail.WorkoutDetailRoute
+import com.example.timerboxing.presentation.exerciselist.ExerciseListRoute
+import com.example.timerboxing.presentation.workoutlist.WorkoutListRoute
+import com.example.timerboxing.presentation.workoutsettings.WorkoutSettingsRoute
 
 @Composable
 fun BoxingApp() {
     val navController = rememberNavController()
-    val repository = (LocalContext.current.applicationContext as BoxingApplication).repository
+    val application = LocalContext.current.applicationContext as BoxingApplication
+    val repository = application.repository
     NavHost(navController = navController, startDestination = "workouts") {
         composable("workouts") {
             WorkoutListRoute(repository, onWorkoutClick = { workoutId ->
                 navController.navigate("workout/$workoutId") { launchSingleTop = true }
+            }, onBrowseExercises = {
+                navController.navigate("exercises") { launchSingleTop = true }
             })
+        }
+        composable("exercises") {
+            ExerciseListRoute(application.exerciseRepository, onBack = { navController.popBackStack() })
         }
         composable(
             route = "workout/{workoutId}",
